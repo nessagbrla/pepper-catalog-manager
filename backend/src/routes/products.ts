@@ -107,16 +107,93 @@ router.get("/:id", (req, res) => {
  *   ]
  * }
  */
-router.post("/", (_req, res) => {
-  // TODO: Implement product creation
-  // 1. Validate required fields (name is required, variants array must have at least one entry)
-  // 2. Validate each variant (sku required + unique, price_cents >= 0, inventory_count >= 0)
-  // 3. Insert product and variants inside a transaction
-  // 4. Return the created product with its variants
-  res.status(501).json({
-    error: "Not implemented",
-    hint: "Implement product creation with validation and a database transaction",
-  });
+router.post("/", (req, res) => {
+  try {
+    const { name, description, category_id, status, variants } = req.body;
+
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Product name is required" });
+    }
+
+    if (!Array.isArray(variants) || variants.length === 0) {
+      return res.status(400).json({ error: "At least one variant is required" });
+    }
+
+    const skus = new Set<string>();
+    for (const variant of variants) {
+      if (
+        !variant ||
+        typeof variant.sku !== "string" ||
+        !variant.sku.trim() ||
+        typeof variant.price_cents !== "number" ||
+        !Number.isInteger(variant.price_cents) ||
+        variant.price_cents < 0 ||
+        typeof variant.inventory_count !== "number" ||
+        !Number.isInteger(variant.inventory_count) ||
+        variant.inventory_count < 0
+      ) {
+        return res.status(400).json({
+          error: "Each variant requires a SKU, non-negative price_cents, and non-negative inventory_count",
+        });
+      }
+
+      const sku = variant.sku.trim();
+      if (skus.has(sku)) {
+        return res.status(400).json({ error: "Variant SKUs must be unique" });
+      }
+      skus.add(sku);
+    }
+
+    const existingSku = db
+      .prepare(`SELECT sku FROM variants WHERE sku IN (${[...skus].map(() => "?").join(", ")})`)
+      .get(...skus);
+    if (existingSku) {
+      return res.status(409).json({ error: "Variant SKU already exists" });
+    }
+
+    const createProduct = db.transaction(() => {
+      const result = db
+        .prepare(
+          `INSERT INTO products (name, description, category_id, status)
+           VALUES (?, ?, ?, ?)`
+        )
+        .run(name.trim(), description ?? null, category_id ?? null, status ?? "active");
+      const productId = Number(result.lastInsertRowid);
+      const insertVariant = db.prepare(
+        `INSERT INTO variants (product_id, sku, name, price_cents, inventory_count)
+         VALUES (?, ?, ?, ?, ?)`
+      );
+
+      for (const variant of variants) {
+        insertVariant.run(
+          productId,
+          variant.sku.trim(),
+          variant.name ?? "Default",
+          variant.price_cents,
+          variant.inventory_count
+        );
+      }
+      return productId;
+    });
+
+    const productId = createProduct();
+    const product = db
+      .prepare(
+        `SELECT p.*, c.name AS category_name
+         FROM products p
+         LEFT JOIN categories c ON p.category_id = c.id
+         WHERE p.id = ?`
+      )
+      .get(productId) as Record<string, unknown>;
+    const createdVariants = db
+      .prepare("SELECT * FROM variants WHERE product_id = ? ORDER BY created_at ASC")
+      .all(productId);
+
+    res.status(201).json({ ...product, variants: createdVariants });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).send(message);
+  }
 });
 
 /**

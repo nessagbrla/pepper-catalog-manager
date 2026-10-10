@@ -10,11 +10,11 @@
 
 Check off what you finished:
 
-- [ ] Task 1 — Create Product
+- [x] Task 1 — Create Product
 - [x] Task 2 — Update Variant
 - [x] Task 3 — Fix soft-delete bug
 - [x] Task 4 — Loading & error states
-- [ ] Task 5 — Input validation
+- [x] Task 5 — Input validation
 
 ---
 
@@ -23,6 +23,9 @@ Check off what you finished:
 _Briefly describe the approach you took for each task. Mention any trade-offs you made or alternative approaches you considered._
 
 ### Task 1
+- Added a form to create products with one or more variants
+- Used a database transaction so the product and all its variants are saved together. If any insert fails, the changes are rolled back.
+- Tested creating a product and confirmed it shows up correctly
 
 ### Task 2
 - Added the PUT endpoint to update the variants, with checks for invalid prices, inventory, and duplicate SKUs
@@ -34,7 +37,6 @@ _Briefly describe the approach you took for each task. Mention any trade-offs yo
 ### Task 3
 - Product listing was showing soft-deleted products because the SQL query was not filtering them out
 - Added p.deleted_at IS NULL to the conditions array, so the deleted products are excluded, even when searching or filtering by category
-- After this fix, the # of tests are improved from 1/17 to 3/17 passing
 
 ### Task 4
 - Added the loading and error states to the products page so users know when the products are loading or something goes wrong
@@ -43,6 +45,9 @@ _Briefly describe the approach you took for each task. Mention any trade-offs yo
 - Tested the new states, including the error state, by stopping the backend and refreshing the page
 
 ### Task 5
+- Added checks for required fields, duplicate SKUs, and negative prices or inventory
+- Added error messages to show users what went wrong
+- Tested negative inventory and duplicate SKUs. Both were rejected.
 
 ### Bonus A
 - Added a deleting state to disable the Delete button while the request is in progress, preventing repeated clicks
@@ -58,4 +63,4 @@ _What would you add, refactor, or fix if you had another couple of hours?_
 
 ## Anything else?
 
-_Optional — anything you want the reviewer to know (e.g. bugs you noticed, improvements you'd suggest to the existing code, etc.)._
+All 17 backend tests passed, and the frontend build completed successfully. I also manually tested product creation, variant editing, input validation, loading and error states, and product deletion.
