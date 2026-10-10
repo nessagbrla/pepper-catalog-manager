@@ -11,7 +11,7 @@
 Check off what you finished:
 
 - [ ] Task 1 — Create Product
-- [ ] Task 2 — Update Variant
+- [x] Task 2 — Update Variant
 - [x] Task 3 — Fix soft-delete bug
 - [x] Task 4 — Loading & error states
 - [ ] Task 5 — Input validation
@@ -25,6 +25,11 @@ _Briefly describe the approach you took for each task. Mention any trade-offs yo
 ### Task 1
 
 ### Task 2
+- Added the PUT endpoint to update the variants, with checks for invalid prices, inventory, and duplicate SKUs
+- Added an Edit button so users can change the price and inventory directly on the product detail page
+- Added Save and Cancel buttons, along with error messages for invalid inputs
+- The backend tests passed successfully
+- Tested the frontend with Fresh Basil Bunch by changing the price from $2.99 to $3.01 and inventory from 45 to 3. Refreshed the page to make sure the changes were saved
 
 ### Task 3
 - Product listing was showing soft-deleted products because the SQL query was not filtering them out
