@@ -54,9 +54,8 @@ router.get("/", (req, res) => {
     const products = db.prepare(query).all(...params);
     res.json(products);
   } catch (err: unknown) {
-    // FIXME: sends plain text error — should this be JSON to match other responses?
     const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).send(message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -88,7 +87,7 @@ router.get("/:id", (req, res) => {
     res.json({ ...product, variants });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).send(message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -192,7 +191,7 @@ router.post("/", (req, res) => {
     res.status(201).json({ ...product, variants: createdVariants });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).send(message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -235,7 +234,7 @@ router.put("/:id", (req, res) => {
     res.json(updated);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).send(message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -244,22 +243,26 @@ router.put("/:id", (req, res) => {
  * Soft-delete a product (sets deleted_at timestamp).
  */
 router.delete("/:id", (req, res) => {
-  const id = Number(req.params.id);
+  try {
+    const id = Number(req.params.id);
 
-  const product = db
-    .prepare("SELECT * FROM products WHERE id = ?")
-    .get(id) as Record<string, unknown> | undefined;
+    const product = db
+      .prepare("SELECT * FROM products WHERE id = ?")
+      .get(id) as Record<string, unknown> | undefined;
 
-  if (!product) {
-    // FIXME: Returns plain text — not JSON like other error responses
-    return res.status(404).send("Product not found");
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    db.prepare(
+      `UPDATE products SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
+    ).run(id);
+
+    res.json({ success: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ error: message });
   }
-
-  db.prepare(
-    `UPDATE products SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
-  ).run(id);
-
-  res.json({ success: true });
 });
 
 export default router;
