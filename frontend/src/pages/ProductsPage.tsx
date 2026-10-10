@@ -7,6 +7,8 @@ import ProductCard from "@/components/ProductCard";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<number | undefined>();
@@ -18,15 +20,42 @@ export default function ProductsPage() {
     fetchCategories()
       .then((r) => r.json())
       .then(setCategories)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch products when filters change
   useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    setError(null);
+
     fetchProducts({ search: search || undefined, category_id: categoryId })
-      .then((r) => r.json())
-      .then(setProducts)
-      .catch(() => {});
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load products.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setProducts(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError("Couldn't load products. Please try again.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [search, categoryId]);
 
   const clearFilters = () => {
@@ -95,12 +124,22 @@ export default function ProductsPage() {
       </div>
 
       {/* Result count */}
-      <p className="mb-4 text-sm text-muted-foreground">
-        {products.length} result{products.length !== 1 ? "s" : ""} found
-      </p>
+      {!loading && !error && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          {products.length} result{products.length !== 1 ? "s" : ""} found
+        </p>
+      )}
 
-      {/* Product grid — 5 columns on xl like original CatalogGrid */}
-      {products.length === 0 ? (
+      {/* Loading, error, and product states */}
+      {loading ? (
+        <div role="status" className="py-20 text-center text-muted-foreground">
+          Loading products...
+        </div>
+      ) : error ? (
+        <div role="alert" className="py-20 text-center text-red-600">
+          <p>{error}</p>
+        </div>
+      ) : products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-lg font-medium">No products found</p>
           <p className="mt-1 text-sm">Try adjusting your search or filters.</p>

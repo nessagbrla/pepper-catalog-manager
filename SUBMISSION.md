@@ -13,7 +13,7 @@ Check off what you finished:
 - [ ] Task 1 — Create Product
 - [ ] Task 2 — Update Variant
 - [x] Task 3 — Fix soft-delete bug
-- [ ] Task 4 — Loading & error states
+- [x] Task 4 — Loading & error states
 - [ ] Task 5 — Input validation
 
 ---
@@ -32,6 +32,10 @@ _Briefly describe the approach you took for each task. Mention any trade-offs yo
 - After this fix, the # of tests are improved from 1/17 to 3/17 passing
 
 ### Task 4
+- Added the loading and error states to the products page so users know when the products are loading or something goes wrong
+- Added a check for failed API responses
+- Prevented older search requests from overwriting the newer search results
+- Tested the new states, including the error state, by stopping the backend and refreshing the page
 
 ### Task 5
 
