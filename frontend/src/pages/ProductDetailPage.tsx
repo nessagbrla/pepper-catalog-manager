@@ -9,6 +9,7 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const refreshProduct = async () => {
     if (!id) return;
 
@@ -31,14 +32,27 @@ export default function ProductDetailPage() {
   }, [id]);
 
   // Delete handler — sends soft-delete request.
-  // FIXME: The button does not disable while the request is in flight,
-  //        so rapid clicks can send multiple DELETE requests.
+  // Prevent duplicate delete requests while deletion is in progress.
   const handleDelete = async () => {
-    if (!id) return;
+    if (!id || deleting) return;
+
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
-    await deleteProduct(Number(id));
-    navigate("/products");
+
+    setDeleting(true);
+
+    try {
+      const response = await deleteProduct(Number(id));
+
+      if (!response.ok) {
+        throw new Error("Failed to delete product");
+      }
+
+      navigate("/products");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete product");
+      setDeleting(false);
+    }
   };
 
   if (!product) {
@@ -95,10 +109,11 @@ export default function ProductDetailPage() {
 
           <button
             onClick={handleDelete}
-            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+            disabled={deleting}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" />
-            Delete
+            {deleting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

@@ -44,6 +44,10 @@ _Briefly describe the approach you took for each task. Mention any trade-offs yo
 
 ### Task 5
 
+### Bonus A
+- Added a deleting state to disable the Delete button while the request is in progress, preventing repeated clicks
+- Added the error handling, so that the button will be available again if the previous request fails
+- Tested deleting a product from the catalog, and confirmed that the product disappeared from the list
 ---
 
 ## What I'd improve with more time
